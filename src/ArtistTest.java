@@ -22,7 +22,7 @@ public class ArtistTest {
     }
 
     @Test
-    public void testAddArtistWithValidInput() {
+    public void testAddArtistWithValidInput() throws Exception {
         // Use a ByteArrayInputStream to provide input to the Scanner
     	Map<String, String> ValidArtistInfo = new HashMap<>();
     	ValidArtistInfo.put("ID", "768RTYHG_%");
@@ -40,7 +40,7 @@ public class ArtistTest {
     }
 
     @Test
-    public void testAddArtistWithInvalidInput() {
+    public void testAddArtistWithInvalidInput() throws Exception {
     	// Use a ByteArrayInputStream to provide input to the Scanner
     	Map<String, String> ValidArtistInfo = new HashMap<>();
     	ValidArtistInfo.put("ID", "123refds&%");

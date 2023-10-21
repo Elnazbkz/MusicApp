@@ -101,22 +101,27 @@ class Artist {
 
 	public static boolean addArtistToTxtFile(Map<String, String> artist) {
 		String newArtistID = artist.get("ID");
-		Artist FoundArtist = Artist.validateArtistID(newArtistID);
-		if (FoundArtist != null) {
+		Artist foundArtist = validateArtistID(newArtistID);
+
+		if (foundArtist != null) {
+			System.out.println("Artist with the same ID already exists.");
 			return false;
-		} else {
-			try (BufferedWriter writer = new BufferedWriter(new FileWriter("Artists-list.txt", true))) {
-				// Format: ID|Name|Address|Birthdate|Bio|Occupations|Genres|Awards
-				writer.write(artist.get("ID") + ";" + artist.get("Name") + ";" + artist.get("Address") + ";"
-						+ artist.get("Birthdate") + ";" + artist.get("Bio") + ";"
-						+ String.join(",", artist.get("Occupations")) + ";" + String.join(",", artist.get("Genres"))
-						+ ";" + String.join(",", artist.get("Awards")));
-				writer.newLine();
-			} catch (IOException e) {
-				return false;
-			}
 		}
-		return true;
+
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter("Artists-list.txt", true))) {
+			String artistLine = artist.get("ID") + ";" + artist.get("Name") + ";" + artist.get("Address") + ";"
+					+ artist.get("Birthdate") + ";" + artist.get("Bio") + ";"
+					+ String.join(",", artist.get("Occupations")) + ";" + String.join(",", artist.get("Genres")) + ";"
+					+ String.join(",", artist.get("Awards"));
+
+			writer.write(artistLine);
+			writer.newLine();
+			System.out.println("Artist added to artists.txt.");
+			return true;
+		} catch (IOException e) {
+			System.err.println("An error occurred while writing to the file: " + e.getMessage());
+			return false;
+		}
 	}
 
 	public static void updateArtistInTxtFile(String artistID, Map<String, String> updatedArtistInfo) {
@@ -180,34 +185,31 @@ class Artist {
 
 			if (!validAwards) {
 				System.out.println("Invalid awards format. Please enter awards in the format: YYYY - Award");
+				return null;
 			}
 		} while (awards.size() < 1 || awards.size() > 5);
 
 		return awards;
 	}
 
-	public static boolean addArtist(Map<String, String> ArtistInfo) {
+	public static boolean addArtist(Map<String, String> ArtistInfo) throws Exception {
 		Scanner scanner = new Scanner(System.in);
 		if (ArtistInfo == null) {
 			ArtistInfo = new HashMap<>();
 
 			// Get Artist ID
 			String artistID;
-			do {
+			while (true) {
 				System.out.println("Enter Artist ID (format: 569MMMRR_%):");
 				artistID = scanner.nextLine().trim();
-				try {
-					// Check if the input date string matches the desired format
-					if (!artistID.matches("[5-9]{3}[A-Z]{5}[%_]{2}")) {
-						throw new Exception(); // Invalid format, throw an exception
-					}
-				} catch (Exception e) {
-					System.out.println("Invalid format. Please enter valid Artist ID");
+				if (artistID.matches("[5-9]{3}[A-Z]{5}[%_]{2}")) {
+					ArtistInfo.put("ID", artistID);
+					System.out.println("Artist ID format is correct.");
+					break; // Exit the loop when a valid Artist ID is provided
+				} else {
+					System.out.println("Invalid format. Please enter a valid Artist ID.");
 				}
-			} while (artistID == null);
-
-			ArtistInfo.put("ID", artistID);
-			System.out.println("Artist ID format is correct.");
+			}
 
 			// Get Name (NO VALIDATION HERE)
 			String Name;
@@ -238,62 +240,99 @@ class Artist {
 			System.out.println("Birthdate format is correct.");
 
 			// Get Address
-			String address;
-			do {
-				System.out.println("Enter Address:");
+			String address = null;
+			while (address == null) {
+				System.out.println("Enter Address (format: City|State|Country):");
 				address = scanner.nextLine().trim();
+
 				try {
-					// Check if the input date string matches the desired format
+					// Check if the input address string matches the desired format
 					if (!address.matches("[a-zA-Z]+\\|[a-zA-Z]+\\|[a-zA-Z]+")) {
-						throw new Exception(); // Invalid format, throw an exception
+						System.out.println(
+								"Invalid Address. Please enter a valid address in the format City|State|Country.");
+						address = null; // Reset address if the format is invalid
+					} else {
+						ArtistInfo.put("Address", address); // Update ArtistInfo when the address is valid
+						System.out.println("Address format is correct.");
 					}
 				} catch (Exception e) {
-					System.out.println("Invalid Address. Please enter valid address:");
+					System.out
+							.println("Invalid Address. Please enter a valid address in the format City|State|Country.");
+					address = null; // Reset address if an exception occurs
 				}
-			} while (address == null);
-			ArtistInfo.put("Address", address);
-			System.out.println("Address format is correct.");
+			}
 
 			// GetBio
-			String bio;
-			int wordCount;
-			do {
+			String bio = null;
+
+			while (bio == null) {
 				System.out.println("Enter Biography (10 to 30 words allowed): ");
 				bio = scanner.nextLine().trim();
-				wordCount = bio.split("\\s+").length;
-			} while (wordCount < 10 || wordCount > 30);
-			ArtistInfo.put("Bio", bio);
-			System.out.println("Bio format is correct.");
+				int wordCount = bio.split("\\s+").length;
 
-			// Get Occupations
-			ArrayList<String> occupations;
-			String occupationsString;
+				if (wordCount < 10 || wordCount > 30) {
+					System.out.println("Invalid Biography. Please enter between 10 to 30 words.");
+					bio = null; // Reset bio if it doesn't meet the word count requirements
+				} else {
+					ArtistInfo.put("Bio", bio); // Update ArtistInfo when the biography is valid
+					System.out.println("Bio format is correct.");
+				}
+			}
 
-			do {
+			ArrayList<String> occupations = new ArrayList<>();
+
+			while (occupations.size() < 1 || occupations.size() > 5) {
 				System.out.println("Enter Occupations (Comma-separated. 1 to 5 occupations allowed): ");
-				occupationsString = scanner.nextLine().trim();
+				String occupationsString = scanner.nextLine().trim();
 				occupations = new ArrayList<>(Arrays.asList(occupationsString.split(",")));
-			} while (occupations.isEmpty() || occupations.size() > 5);
+
+				if (occupations.isEmpty() || occupations.size() > 5) {
+					System.out.println("Invalid Occupations format. Please enter 1 to 5 comma-separated occupations.");
+				}
+			}
+
+			String occupationsString = String.join(",", occupations);
 			ArtistInfo.put("Occupations", occupationsString);
 			System.out.println("Occupations format is correct.");
 
+			
+			
 			// Get Genres
 			ArrayList<String> genres;
 			String genresString;
 
+			boolean containsPopAndRock;
+			boolean isValid;
 			do {
-				System.out.println("Enter Genres (Comma-separated - 1 to 5 allowed): ");
+				System.out.println(
+						"Enter Genres (Comma-separated - 1 to 5 allowed, 'pop' and 'rock' cannot be both selected): ");
 				genresString = scanner.nextLine().trim();
 				genres = new ArrayList<>(Arrays.asList(genresString.split(",")));
-			} while (genres.size() < 2 || genres.size() > 5 || (genres.contains("pop") && genres.contains("rock")));
+
+				isValid = genres.size() >= 1 && genres.size() <= 5;
+				containsPopAndRock = genres.contains("pop") && genres.contains("rock");
+
+				if (!isValid || containsPopAndRock) {
+					System.out.println(
+							"Invalid genres selection. Please select 1 to 5 different genres, and 'pop' and 'rock' cannot be both selected.");
+				}
+			} while (!isValid || containsPopAndRock);
+
 			ArtistInfo.put("Genres", genresString);
 			System.out.println("Genres format is correct.");
 
 			// Get awards
 			ArrayList<String> awards = getAwards(scanner);
+
+			while (awards == null) {
+				awards = getAwards(scanner);
+			}
+
 			String awardsString = String.join(",", awards);
 			ArtistInfo.put("Awards", awardsString);
+
 			System.out.println("Awards format is correct.");
+
 		}
 		boolean result = addArtistToTxtFile(ArtistInfo);
 		if (result) {
@@ -341,7 +380,7 @@ class Artist {
 		do {
 			try {
 				System.out.println(
-						"Provide new information('fullname', 'birthdate', 'address', 'bio', 'occupation1,occupation2,...', 'award1,award2,...')");
+						"Provide new information, seperate with (;) - (fullname; birthdate; address; bio; occupation1, occupation2 ...; genre1, genre2 ...; award1, award2)");
 				String artistNewInfo = scanner.nextLine().trim();
 				String[] infoParts = artistNewInfo.split(";");
 
@@ -426,22 +465,6 @@ class Artist {
 
 		updateArtistInTxtFile(artistID, updatedArtistInfo);
 		return true;
-	}
-
-	public static void main(String[] args) {
-		Scanner scanner = new Scanner(System.in);
-
-		// Create a new artist or update an existing artist
-		System.out.print("Do you want to add a new artist (1) or update an existing artist (2)? ");
-		int choice = scanner.nextInt();
-		if (choice == 1) {
-			addArtist(null);
-		} else if (choice == 2) {
-			updateArtist();
-		} else {
-			System.out.print("Invalid input, please select (1) to add new artist or (2) to update an artist: ");
-		}
-
 	}
 
 }
